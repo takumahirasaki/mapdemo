@@ -19,9 +19,14 @@ public class DemoController {
       public DemoController(DemoService demoService){
         this.demoService = demoService;
     }
-     @GetMapping("home")
+     @GetMapping("/home")
     public String home(Model model) {
         return "home";
+    }
+
+    @GetMapping("/login")
+    public String login() {
+        return "login"; // templates/login.html を返す
     }
 }
 
