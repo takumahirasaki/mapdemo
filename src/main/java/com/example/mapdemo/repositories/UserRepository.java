@@ -1,4 +1,4 @@
-package com.example.mapdemo.repositries;
+package com.example.mapdemo.repositories;
 
 import java.util.Optional;
 

@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Create Post</title>
+</head>
+<body>
+    <h1>Create a New Post</h1>
+    <form id="postForm">
+        <label for="title">Title:</label>
+        <input type="text" id="title" name="title" required>
+        <br>
+        <label for="content">Content:</label>
+        <textarea id="content" name="content" required></textarea>
+        <br>
+        <label for="latitude">Latitude:</label>
+        <input type="number" id="latitude" name="latitude" step="0.000001" required>
+        <br>
+        <label for="longitude">Longitude:</label>
+        <input type="number" id="longitude" name="longitude" step="0.000001" required>
+        <br>
+        <label for="username">Username:</label>
+        <input type="text" id="username" name="username" required>
+        <br>
+        <button type="button" onclick="submitPost()">Submit</button>
+    </form>
+
+    <script>
+        function submitPost() {
+            const post = {
+                title: document.getElementById('title').value,
+                content: document.getElementById('content').value,
+                latitude: parseFloat(document.getElementById('latitude').value),
+                longitude: parseFloat(document.getElementById('longitude').value),
+                username: document.getElementById('username').value
+            };
+
+            fetch('/api/posts', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(post),
+            })
+            .then(response => {
+                if (response.ok) {
+                    alert('Post created successfully!');
+                    window.location.reload();
+                } else {
+                    alert('Error creating post.');
+                }
+            })
+            .catch(error => console.error('Error:', error));
+        }
+    </script>
+</body>
+</html>

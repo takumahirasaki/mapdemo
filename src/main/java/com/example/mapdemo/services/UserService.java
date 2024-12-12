@@ -4,7 +4,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import com.example.mapdemo.entity.UserEntity;
-import com.example.mapdemo.repositries.UserRepository;
+import com.example.mapdemo.repositories.UserRepository;
 
 @Service
 public class UserService {
