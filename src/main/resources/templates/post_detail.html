@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Post Detail</title>
+</head>
+<body>
+    <h1 th:text="${post.title}">Post Title</h1>
+    <p th:text="${post.content}">Post Content</p>
+    <p>Created by: <span th:text="${post.username}">Username</span></p>
+    <p>At: <span th:text="${#temporals.format(post.createdAt,'yyyy-MM-dd HH:mm:ss')}">Created At</span></p>
+    <p>Location: <span th:text="${post.latitude}">Latitude</span>, <span th:text="${post.longitude}">Longitude</span></p>
+
+    <h2>Comments</h2>
+    <ul id="comments"></ul>
+
+    <h3>Add a Comment</h3>
+    <form id="commentForm" method = "POST">
+        <textarea id="content" name="content" placeholder="Write your comment here..." required></textarea>
+        <br>
+        <input type="text" id="author" name="author" placeholder="Your name" required>
+        <br>
+        <button type="button" id="submitButton">Submit</button>
+    </form>
+
+    <a href="/demo/posts">Back to Posts</a>
+
+    <script th:inline="javascript">
+        document.addEventListener('DOMContentLoaded', function () {
+            const postId = /*[[${post.id}]]*/ post.id; //デフォルト値を設定
+            console.log("Post ID:", postId); // デバッグログ
+
+
+            //commentを確認する関数
+            async function loadComments(){
+                try{
+                    const response = await fetch(`/api/comments/${postId}`);
+                    if(!response.ok){
+                        throw new Error('Failed to fetch comments');
+                    }
+                    const data = await response.json();
+                    const commentList = document.getElementById('comments');
+                    commentList.innerHTML = '';
+                    data.forEach(comment =>{
+                        const li = document.createElement('li');
+                        const formattedDate = new Date(comment.createdAt).toLocaleString();
+                        li.innerHTML = `<strong>${comment.author}:</strong> ${comment.content} <em>(${formattedDate})</em>`;
+                        commentList.appendChild(li);
+                    });
+                    
+                }catch(error){
+                    console.error('Error loading comments:' , error);
+                }
+
+            }
+
+         // コメントを投稿する関数
+        async function submitComment() {
+            if (postId === null) {
+                alert('Invalid Post ID.');
+                return;
+            }
+
+            const comment = {
+                postId: postId,
+                content: document.getElementById('content').value,
+                author: document.getElementById('author').value
+            };
+
+            try {
+                const response = await fetch('/api/comments', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(comment),
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to add comment');
+                }
+
+                alert('Comment added successfully!');
+                await loadComments(); // 新しいコメントを表示
+                document.getElementById('content').value = ''; // フォームをリセット
+                document.getElementById('author').value = '';
+            } catch (error) {
+                console.error('Error adding comment:', error);
+                alert('Error adding comment.');
+            }
+        }
+
+        // 初回ロード時にコメントを表示
+        loadComments();
+
+        const submitButton = document.getElementById('submitButton');
+        submitButton.addEventListener('click', submitComment);
+          
+        });
+    </script>
+</body>
+</html>

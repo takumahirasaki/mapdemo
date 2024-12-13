@@ -9,8 +9,10 @@
         <li th:each="post : ${posts}">
             <h2 th:text="${post.title}">Post Title</h2>
             <p th:text="${post.content}">Post Content</p>
-            <p th:text="${post.createdAt}">Created At</p>
+            <p th:text="${#temporals.format(post.createdAt,'yyyy-MM-dd HH:mm:ss')}">Created At</p>
+            <a th:href="@{'/demo/posts/' + ${post.id}}">詳細を見る</a>
         </li>
     </ul>
+    <a href="/demo/post/create">投稿作成画面へ</a>
 </body>
 </html>
