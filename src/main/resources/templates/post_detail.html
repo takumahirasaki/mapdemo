@@ -2,6 +2,15 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <title>Post Detail</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <style>
+        #map {
+            width: 30%;
+            height: 400px;
+            margin-bottom: 20px;
+        }
+    </style>
 </head>
 <body>
     <h1 th:text="${post.title}">Post Title</h1>
@@ -9,6 +18,8 @@
     <p>Created by: <span th:text="${post.username}">Username</span></p>
     <p>At: <span th:text="${#temporals.format(post.createdAt,'yyyy-MM-dd HH:mm:ss')}">Created At</span></p>
     <p>Location: <span th:text="${post.latitude}">Latitude</span>, <span th:text="${post.longitude}">Longitude</span></p>
+    <!-- map表示 -->
+    <div id="map"></div>
 
     <h2>Comments</h2>
     <ul id="comments"></ul>
@@ -23,12 +34,27 @@
     </form>
 
     <a href="/demo/posts">Back to Posts</a>
+    <a th:href="@{/demo/posts/edit/{id}(id=${post.id})}" class="button">Edit</a>
+    <button id="deletePostButton">Delete Post</button>
 
     <script th:inline="javascript">
         document.addEventListener('DOMContentLoaded', function () {
             const postId = /*[[${post.id}]]*/ post.id; //デフォルト値を設定
-            console.log("Post ID:", postId); // デバッグログ
+            const latitude = /*[[${post.latitude}]]*/ post.latitude;
+            const longitude = /*[[${post.longitude}]]*/ post.longitude;
 
+            const map = L.map('map').setView([latitude, longitude], 13);
+
+            // タイルレイヤーを追加
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 19,
+                attribution: '© OpenStreetMap contributors'
+            }).addTo(map);
+
+            // マーカーを追加
+            L.marker([latitude, longitude]).addTo(map)
+                .bindPopup('Location of the Post')
+                .openPopup();
 
             //commentを確認する関数
             async function loadComments(){
@@ -60,7 +86,7 @@
                 return;
             }
 
-            const comment = {
+            const commentForm = {
                 postId: postId,
                 content: document.getElementById('content').value,
                 author: document.getElementById('author').value
@@ -72,7 +98,7 @@
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify(comment),
+                    body: JSON.stringify(commentForm),
                 });
 
                 if (!response.ok) {
@@ -95,7 +121,34 @@
         const submitButton = document.getElementById('submitButton');
         submitButton.addEventListener('click', submitComment);
           
-        });
+        
+
+        //投稿を削除する関数
+        async function deletePost(){
+            if(!confirm("このポストを削除しますか？")){
+                return;
+            }
+
+            try{
+                const response = await fetch(`/api/posts/${postId}`,{
+                    method: 'DELETE',
+                });
+
+                if(!response.ok){
+                    throw new Error("削除に失敗しました");
+                }
+
+                alert('投稿の削除に成功しました');
+                window.location.href = '/demo/posts';
+            }catch(error){
+                console.error('Error deleting post:',error);
+                alert('Error deleting post.');
+            }
+        }
+
+        document.getElementById('deletePostButton').addEventListener('click',deletePost);
+    });
+
     </script>
 </body>
 </html>

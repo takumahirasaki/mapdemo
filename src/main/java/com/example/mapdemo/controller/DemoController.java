@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 
 import com.example.mapdemo.entity.Post;
 import com.example.mapdemo.repositories.PostRepository;
-import com.example.mapdemo.services.DemoService;
+import com.example.mapdemo.services.PostService;
 import org.springframework.web.bind.annotation.RequestParam;
 
 
@@ -20,13 +20,13 @@ import org.springframework.web.bind.annotation.RequestParam;
 @RequestMapping("/demo")
 public class DemoController {
     
-    private final DemoService demoService;
+    private final PostService demoService;
 
      @Autowired
     private PostRepository postRepository;
 
       //コンストラクタ
-      public DemoController(DemoService demoService, PostRepository postRepository){
+      public DemoController(PostService demoService, PostRepository postRepository){
         this.demoService = demoService;
         this.postRepository = postRepository;
     }
@@ -57,6 +57,13 @@ public class DemoController {
         Post post = postRepository.findById(id).orElse(null);
         model.addAttribute("post", post != null ? post : new Post()); // デフォルトのPostを渡す
         return "post_detail";
+    }
+
+    @GetMapping("/posts/edit/{id}")
+    public String editPost(@PathVariable Long id,Model model){
+        Post post = postRepository.findById(id).orElse(null);
+        model.addAttribute("post", post);
+        return "edit_post";
     }
 
     

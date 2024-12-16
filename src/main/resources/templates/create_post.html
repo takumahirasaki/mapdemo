@@ -1,7 +1,16 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html>
 <head>
     <title>Create Post</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <style>
+        #map {
+            width: 30%;
+            height: 400px;
+            margin-bottom: 20px;
+        }
+    </style>
 </head>
 <body>
     <h1>Create a New Post</h1>
@@ -9,50 +18,103 @@
         <label for="title">Title:</label>
         <input type="text" id="title" name="title" required>
         <br>
-        <label for="content">Content:</label>
-        <textarea id="content" name="content" required></textarea>
-        <br>
-        <label for="latitude">Latitude:</label>
-        <input type="number" id="latitude" name="latitude" step="0.000001" required>
-        <br>
-        <label for="longitude">Longitude:</label>
-        <input type="number" id="longitude" name="longitude" step="0.000001" required>
-        <br>
         <label for="username">Username:</label>
         <input type="text" id="username" name="username" required>
         <br>
+        <label for="content">Content:</label>
+        <textarea id="content" name="content" required></textarea>
+        <br>
+
+        <!-- 地図を表示 -->
+        <div id="map"></div>
+
+        <!-- 緯度と経度を表示 -->
+        <label for="latitude">Latitude:</label>
+        <input type="number" id="latitude" name="latitude" step="0.000001" readonly>
+        <br>
+        <label for="longitude">Longitude:</label>
+        <input type="number" id="longitude" name="longitude" step="0.000001" readonly>
+        <br>
+
         <button type="button" onclick="submitPost()">Submit</button>
     </form>
 
-    <button onclick="window.location.href='/demo/home'">戻る</button>
-
-
     <script>
-        function submitPost() {
-            const post = {
+        // 地図とマーカーの初期化
+        let map, marker;
+
+        function initializeMap(lat, lng) {
+            // 地図を作成
+            map = L.map('map').setView([lat, lng], 13);
+
+            // タイルレイヤーを追加
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 19,
+                attribution: '© OpenStreetMap contributors'
+            }).addTo(map);
+
+            // ドラッグ可能なマーカーを作成
+            marker = L.marker([lat, lng], { draggable: true }).addTo(map);
+
+            // マーカーを移動したときに緯度・経度を更新
+            marker.on('moveend', function (e) {
+                const position = e.target.getLatLng();
+                document.getElementById('latitude').value = position.lat.toFixed(6);
+                document.getElementById('longitude').value = position.lng.toFixed(6);
+            });
+
+            // 初期値を入力フィールドに設定
+            document.getElementById('latitude').value = lat.toFixed(6);
+            document.getElementById('longitude').value = lng.toFixed(6);
+        }
+
+        // 現在地を取得
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    const { latitude, longitude } = position.coords;
+                    console.log("Current Position:", latitude, longitude);
+                    initializeMap(latitude, longitude); // 現在地で地図を初期化
+                },
+                (error) => {
+                    console.error("Geolocation error:", error);
+                    // 現在地が取得できなかった場合のデフォルト位置（例: 東京タワー）
+                    initializeMap(35.6586, 139.7454);
+                }
+            );
+        } else {
+            alert('Geolocation is not supported by your browser.');
+            initializeMap(35.6586, 139.7454); // デフォルト位置
+        }
+
+        // 投稿を送信
+        async function submitPost() {
+            const postForm = {
                 title: document.getElementById('title').value,
+                username: document.getElementById('username').value,
                 content: document.getElementById('content').value,
                 latitude: parseFloat(document.getElementById('latitude').value),
                 longitude: parseFloat(document.getElementById('longitude').value),
-                username: document.getElementById('username').value
             };
 
-            fetch('/api/posts', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(post),
-            })
-            .then(response => {
+            try {
+                const response = await fetch('/api/posts', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(postForm),
+                });
+
                 if (response.ok) {
                     alert('Post created successfully!');
-                    window.location.reload();
+                    window.location.href = '/demo/posts'; // 一覧ページにリダイレクト
                 } else {
                     alert('Error creating post.');
                 }
-            })
-            .catch(error => console.error('Error:', error));
+            } catch (error) {
+                console.error('Error:', error);
+            }
         }
     </script>
 </body>

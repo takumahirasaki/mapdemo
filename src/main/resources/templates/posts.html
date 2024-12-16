@@ -2,6 +2,15 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <title>Posts</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <style>
+        #map {
+            width: 50%;
+            height: 600px;
+            margin-bottom: 20px;
+        }
+    </style>
 </head>
 <body>
     <h1>Posts</h1>
@@ -13,6 +22,66 @@
             <a th:href="@{'/demo/posts/' + ${post.id}}">詳細を見る</a>
         </li>
     </ul>
+    <h1>Posts Map</h1>
+    <div id="map"></div>
     <a href="/demo/post/create">投稿作成画面へ</a>
+    <script>
+        // 地図を初期化
+        const map = L.map('map').setView([35.6586, 139.7454], 13);
+
+        // タイルレイヤーを追加
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+
+        // 現在地を取得
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(async (position) => {
+                const { latitude, longitude } = position.coords;
+
+                // 現在地にマーカーを追加
+                L.marker([latitude, longitude]).addTo(map).bindPopup("Your Current Location").openPopup();
+
+                // サーバーから投稿一覧を取得
+                const response = await fetch('/api/posts');
+                const posts = await response.json();
+
+                console.log("Fetched posts:", posts); // 投稿データを確認
+
+                posts.forEach(post => {
+                    const isNearby = calculateDistance(latitude, longitude, post.latitude, post.longitude) <= 5;
+
+                    const marker = L.marker([post.latitude, post.longitude]).addTo(map);
+                    marker.bindPopup(`<b>${post.title}</b><br>${post.content}<br><a href="/demo/posts/${post.id}">View Details</a>`);
+
+
+                    if (isNearby) {
+                        marker.openPopup(); // 近い投稿を強調
+                    }
+                });
+            }, (error) => {
+                console.error("Error fetching location:", error);
+                alert("Failed to get your location.");
+            });
+        } else {
+            alert("Geolocation is not supported by your browser.");
+        }
+
+        function toRadians(degrees) {
+        return degrees * (Math.PI / 180);
+}
+
+        function calculateDistance(lat1, lng1, lat2, lng2) {
+            const earthRadius = 6371.0;
+            const dLat = toRadians(lat2 - lat1);
+            const dLng = toRadians(lng2 - lng1);
+            const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                       Math.cos(toRadians(lat1)) * Math.cos(toRadians(lat2)) *
+                       Math.sin(dLng / 2) * Math.sin(dLng / 2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+            return earthRadius * c;
+        }
+    </script>
 </body>
 </html>
